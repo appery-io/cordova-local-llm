@@ -17,7 +17,7 @@ Cordova plugin for on-device LLM on **iOS** (Apple Intelligence / Foundation Mod
 
 ## JavaScript API
 
-After `deviceready`, the global `**window.LocalLLM`** object is available:
+After `deviceready`, the global **`window.LocalLLM`** object is available:
 
 ```javascript
 document.addEventListener('deviceready', async () => {
