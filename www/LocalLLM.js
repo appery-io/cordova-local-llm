@@ -1,5 +1,5 @@
 /**
- * Cordova plugin for on-device LLM (iOS: Apple Intelligence / Foundation Models).
+ * Cordova plugin for on-device LLM (iOS: Apple Intelligence; Android: Gemini Nano).
  *
  * API mirrors @capacitor/local-llm where possible.
  */
@@ -36,7 +36,7 @@ var LocalLLM = {
   },
 
   /**
-   * Not supported on iOS (Android-only in Capacitor version).
+   * Downloads the on-device model (Android / Gemini Nano). Not supported on iOS.
    */
   download: function () {
     return execPromise('download', []);

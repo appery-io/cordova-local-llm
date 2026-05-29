@@ -158,7 +158,8 @@ public class LocalLLM {
         async throws -> [String]
     {
         if #available(iOS 18.4, *) {
-            let creator = try await ImageCreator()
+            do {
+                let creator = try await ImageCreator()
             guard let style = creator.availableStyles.first else {
                 throw LocalLLMError.imageGenerationFailed
             }
@@ -183,7 +184,15 @@ public class LocalLLM {
                 }
             }
 
-            return imageData
+                return imageData
+            } catch let err as ImageCreator.Error {
+                switch err {
+                case .notSupported:
+                    throw LocalLLMError.unsupportedPlatform
+                default:
+                    throw err
+                }
+            }
         } else {
             throw LocalLLMError.unsupportedPlatform
         }

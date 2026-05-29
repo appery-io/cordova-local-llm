@@ -1,4 +1,5 @@
 import Foundation
+import FoundationModels
 
 @objc(LocalLLMPlugin)
 class LocalLLMPlugin: CDVPlugin {
@@ -208,12 +209,56 @@ class LocalLLMPlugin: CDVPlugin {
     }
 
     private func sendError(_ command: CDVInvokedUrlCommand, error: Error) {
+        let nsError = error as NSError
+
+        if #available(iOS 26.0, *), let genError = error as? LanguageModelSession.GenerationError {
+            let payload: [String: Any] = [
+                "code": "LOCAL_LLM_GENERATION_ERROR",
+                "message": genError.localizedDescription,
+                "details": String(reflecting: genError),
+                "nsErrorDomain": nsError.domain,
+                "nsErrorCode": nsError.code,
+            ]
+            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: payload)
+            commandDelegate.send(result, callbackId: command.callbackId)
+            return
+        }
+
+        // Some FoundationModels errors bridge through as NSError without a typed enum instance.
+        if #available(iOS 26.0, *), nsError.domain == "FoundationModels.LanguageModelSession.GenerationError" {
+            var payload: [String: Any] = [
+                "code": "LOCAL_LLM_GENERATION_ERROR",
+                "message": error.localizedDescription,
+                "details": String(reflecting: error),
+                "nsErrorDomain": nsError.domain,
+                "nsErrorCode": nsError.code,
+            ]
+
+            if let underlying = nsError.userInfo[NSMultipleUnderlyingErrorsKey] as? [NSError] {
+                payload["underlyingErrors"] = underlying.map { u in
+                    [
+                        "domain": u.domain,
+                        "code": u.code,
+                        "description": u.localizedDescription,
+                        "details": String(reflecting: u),
+                    ]
+                }
+            }
+
+            let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: payload)
+            commandDelegate.send(result, callbackId: command.callbackId)
+            return
+        }
+
         let llmError = error as? LocalLLMError
         let code = llmError?.errorCode ?? "LOCAL_LLM_UNKNOWN_ERROR"
         let message = llmError?.errorDescription ?? error.localizedDescription
         let payload: [String: Any] = [
             "code": code,
-            "message": message
+            "message": message,
+            "details": String(reflecting: error),
+            "nsErrorDomain": nsError.domain,
+            "nsErrorCode": nsError.code,
         ]
         let result = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: payload)
         commandDelegate.send(result, callbackId: command.callbackId)

@@ -3,9 +3,9 @@
         id="cordova-local-llm"
         version="1.0.0">
     <name>Local LLM</name>
-    <description>On-device LLM (Apple Intelligence / Foundation Models) for Cordova iOS</description>
+    <description>On-device LLM for Cordova (iOS: Apple Intelligence; Android: Gemini Nano)</description>
     <license>MIT</license>
-    <keywords>cordova,llm,ai,apple-intelligence,local-llm</keywords>
+    <keywords>cordova,llm,ai,apple-intelligence,gemini-nano,local-llm</keywords>
 
     <js-module src="www/LocalLLM.js" name="LocalLLM">
         <clobbers target="LocalLLM" />
@@ -27,6 +27,25 @@
 
         <framework src="FoundationModels.framework" weak="true" />
         <framework src="ImagePlayground.framework" weak="true" />
+    </platform>
+
+    <platform name="android">
+        <preference name="android-minSdkVersion" default="29" />
+
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="LocalLLM">
+                <param name="android-package" value="io.ionic.localllm.LocalLLMPlugin" />
+            </feature>
+        </config-file>
+
+        <framework src="src/android/local-llm.gradle" custom="true" type="gradleReference" />
+
+        <source-file src="src/android/LocalLLMPlugin.kt" target-dir="java/io/ionic/localllm" />
+        <source-file src="src/android/LocalLLM.kt" target-dir="java/io/ionic/localllm" />
+        <source-file src="src/android/LocalLLMError.kt" target-dir="java/io/ionic/localllm" />
+        <source-file src="src/android/LLMAvailability.kt" target-dir="java/io/ionic/localllm" />
+        <source-file src="src/android/LLMOptions.kt" target-dir="java/io/ionic/localllm" />
+        <source-file src="src/android/LLMPromptOptions.kt" target-dir="java/io/ionic/localllm" />
     </platform>
 
 </plugin>

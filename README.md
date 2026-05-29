@@ -1,39 +1,47 @@
 # cordova-local-llm
 
-Cordova-плагин для on-device LLM на **iOS** (Apple Intelligence / Foundation Models и Image Playground). Логика нативного слоя перенесена из `@capacitor/local-llm`; JavaScript API совместим с Capacitor-версией.
+Cordova plugin for on-device LLM on **iOS** (Apple Intelligence / Foundation Models) and **Android** (Gemini Nano via ML Kit). The JavaScript API is aligned with `@capacitor/local-llm`.
 
-## Требования
+## Requirements
 
-| Функция | Минимум |
-|--------|---------|
-| Сборка / Image Playground | **iOS 18.4**, Xcode на Mac с поддерживаемой версией SDK |
-| Текстовый LLM (`prompt`, `warmup`, сессии) | **iOS 26+**, включённый **Apple Intelligence** на устройстве или симуляторе |
-| Mac для симулятора | Mac с Apple Silicon и включённым Apple Intelligence (для тестов LLM в Simulator) |
+| Feature | iOS | Android |
+|--------|-----|---------|
+| Minimum OS | **iOS 18.4** (build), **iOS 26+** (text LLM) | **API 29** (Android 10) |
+| Text LLM | Apple Intelligence enabled | Gemini Nano on device |
+| `download()` | Not supported | Yes (model download) |
+| `generateImage()` | Image Playground (iOS 18.4+) | Not supported |
+| `warmup()` | Requires `sessionId` (iOS 26+) | Yes (no `sessionId`) |
+| Emulator | iOS 26+ Simulator on a Mac with Apple Intelligence (limited) | **Not supported** — physical device only |
 
-Android в этой Cordova-сборке **не включён** (в Capacitor-оригинале используется Gemini Nano).
-
-## Установка плагина в свой проект
+## Installation
 
 ```bash
 cd /path/to/your-cordova-app
 cordova plugin add /path/to/capacitor-local-llm-main/cordova-local-llm
-cordova platform add ios
+cordova platform add ios    # and/or
+cordova platform add android
 ```
 
-Или из git (после публикации):
+To reinstall after plugin changes:
 
 ```bash
-cordova plugin add cordova-local-llm
+cordova plugin rm cordova-local-llm
+cordova plugin add /path/to/cordova-local-llm
+cordova prepare ios    # or: cordova prepare android
 ```
 
 ## JavaScript API
 
-После `deviceready` глобальный объект **`LocalLLM`** (как в Capacitor):
+After `deviceready`, the global **`LocalLLM`** object is available:
 
 ```javascript
 document.addEventListener('deviceready', async () => {
   const { status } = await LocalLLM.systemAvailability();
-  console.log(status); // available | unavailable | notready
+  // available | unavailable | notready | downloadable (Android)
+
+  if (status === 'downloadable') {
+    await LocalLLM.download(); // Android only
+  }
 
   const { text } = await LocalLLM.prompt({
     prompt: 'Explain on-device LLM in one sentence.',
@@ -46,117 +54,123 @@ document.addEventListener('deviceready', async () => {
 });
 ```
 
-Ошибки приходят как объект `{ code, message }` (коды вроде `LOCAL_LLM_NOT_ENABLED`, `LOCAL_LLM_UNSUPPORTED_PLATFORM`).
+Errors are returned as objects: `{ code, message, details?, underlyingErrors?, nsErrorDomain?, nsErrorCode? }`.
 
-Методы: `systemAvailability`, `prompt`, `endSession`, `warmup`, `generateImage`, `download` (на iOS — ошибка «не поддерживается»), `addListener`, `removeAllListeners`.
+### Methods
 
-## Сборка примера на iPhone
+| Method | iOS | Android |
+|--------|-----|---------|
+| `systemAvailability()` | Yes | Yes |
+| `download()` | Error | Yes |
+| `prompt(options)` | Yes (iOS 26+) | Yes |
+| `endSession({ sessionId })` | Yes | Yes |
+| `warmup(options)` | Yes (`sessionId` required) | Yes |
+| `generateImage(options)` | Yes (Image Playground) | Error |
+| `addListener('systemAvailabilityChange', fn)` | Yes | Yes |
+| `removeAllListeners()` | Yes | Yes |
 
-В репозитории есть готовое demo: `cordova-example-app/`.
+### Image generation (iOS only)
 
-### 1. Установить инструменты
+```javascript
+const res = await LocalLLM.generateImage({
+  prompt: 'A calm lake at sunset',
+  count: 1,
+  promptImages: ['data:image/png;base64,...'], // optional reference images
+});
 
-```bash
-npm install -g cordova@12
-# Xcode из App Store, Command Line Tools:
-xcode-select --install
+const img = document.createElement('img');
+img.src = 'data:image/png;base64,' + res.pngBase64Images[0];
 ```
 
-### 2. Подготовить пример
+## Example app
 
 ```bash
-cd /Users/aantsypau/workspace/capacitor-local-llm-main/cordova-example-app
+cd cordova-example-app
 npm install
 cordova plugin add ../cordova-local-llm
-cordova platform add ios
+cordova platform add ios      # Mac + Xcode
+cordova platform add android  # Android Studio + SDK
 ```
 
-### 3. Собрать
+### iOS
 
 ```bash
 cordova build ios
-```
-
-Открыть проект в Xcode:
-
-```bash
 open platforms/ios/*.xcworkspace
-# если workspace нет:
-open platforms/ios/*.xcodeproj
 ```
 
-### 4. Запуск на устройстве
-
-1. Подключите iPhone (iOS 18.4+; для текста — **iOS 26**).
-2. В Xcode: target приложения → **Signing & Capabilities** → выберите свою Team и уникальный Bundle ID.
-3. На iPhone: **Настройки → Apple Intelligence** — включите (для `prompt`).
-4. Выберите iPhone в списке устройств → **Run** (▶).
-
-Через CLI (подставьте имя устройства из `xcrun xctrace list devices`):
+### Android
 
 ```bash
-cordova run ios --device
+cordova build android
+cordova run android --device
 ```
 
-### 5. Симулятор (ограничения)
+Requires **JDK 17+** for Gradle.
 
-```bash
-cordova emulate ios
-```
+---
 
-- **Image Playground** (`generateImage`) может работать на подходящем симуляторе с iOS 18.4+.
-- **Текстовый LLM** нужен симулятор **iOS 26+** и Mac с включённым Apple Intelligence; иначе `systemAvailability` вернёт `unavailable` / `notready`.
+## Testing: iOS vs Android
 
-## Как протестировать
+### Overview
 
-### Чеклист в demo-приложении
+| | iOS | Android |
+|---|-----|---------|
+| Where to run | Simulator **or** iPhone | **Physical phone only** |
+| `notready` | Apple Intelligence assets still loading | Model downloading (`DOWNLOADING`) |
+| `downloadable` | Rare | Call `LocalLLM.download()` |
+| `available` | Safe to call `prompt` | Safe to call `prompt` |
+| JS debugging | Safari → Develop → device/simulator | Chrome → `chrome://inspect` |
+| Images | `generateImage` (if Image Playground is available) | `LOCAL_LLM_FEATURE_NOT_SUPPORTED_ON_ANDROID` |
 
-1. Запустите приложение, дождитесь `deviceready`.
-2. **«Проверить доступность»** — ожидается `available` при готовой модели; иначе `notready` / `unavailable` (см. настройки Apple Intelligence).
-3. Введите текст и нажмите **«Отправить prompt»** — в блоке ответа должен появиться текст модели (только iOS 26+).
-4. **«Сгенерировать»** (изображение) — должна появиться картинка (iOS 18.4+, Image Playground).
-5. Смените статус AI в системных настройках — подписчик `systemAvailabilityChange` должен обновить статус на экране.
+### iOS
 
-### Проверка из Safari Web Inspector
+1. **Align versions**: macOS, Xcode, and the **Simulator runtime** should match (e.g. 26.5 / 26.5 / iOS 26.5). A mismatch often causes `ModelManagerError 1026` on `prompt` even when `systemAvailability` returns `available` or `notready`.
+2. Enable **Apple Intelligence** on your Mac and on the simulator/device.
+3. Set language to **English (US)** and Siri to **English (United States)** — otherwise assets may not download.
+4. If status stays `notready`, wait or toggle Apple Intelligence off/on and restart your Mac.
+5. For Simulator: `cordova build ios` → open in Xcode → Run. If the CLI fails because an old simulator is missing, pick a current device in Xcode (e.g. **iPhone 17, iOS 26.5**).
+6. Image Playground is often **not supported** on Simulator — use a physical iPhone for `generateImage`.
 
-1. На Mac: **Safari → Develop → [ваш iPhone] → Local LLM Cordova Demo**.
-2. В консоли:
+### Android
 
-```javascript
-LocalLLM.systemAvailability().then(console.log);
-LocalLLM.prompt({ prompt: 'Hello' }).then(console.log).catch(console.error);
-```
+1. **Emulators are not supported** — Gemini Nano needs compatible hardware (typically Pixel 8+ and similar devices with AICore).
+2. Install **Android Studio**, SDK 29+, enable USB debugging on the phone.
+3. Check availability → if `downloadable`, download the model → wait for `available`.
+4. `maximumOutputTokens` in `options` is limited to **1–256** (same as Capacitor).
+5. `warmup()` does not require `sessionId` (unlike iOS).
 
-### Типичные ошибки
+Logs: `adb logcat` or Android Studio Logcat. Filter by your app package or `LocalLLM`.
 
-| Код / симптом | Что сделать |
-|---------------|-------------|
-| `LOCAL_LLM_UNSUPPORTED_PLATFORM` | Устройство или iOS ниже требований; для текста нужен iOS 26. |
-| `LOCAL_LLM_NOT_ENABLED` | Включить Apple Intelligence в Настройках. |
-| `LOCAL_LLM_NOT_READY` | Дождаться загрузки модели; повторить позже. |
-| Плагин не найден | Собирать только после `cordova prepare` / `cordova build ios`, не открывать голый `www/` в браузере. |
-| Signing error в Xcode | Настроить Apple Developer Team и Bundle ID. |
+### Common issues
 
-## Структура плагина
+| Symptom | iOS | Android |
+|---------|-----|---------|
+| `notready` | Wait for AI assets; check OS/Xcode versions | Wait or call `download()` |
+| `GenerationError` / `ModelManagerError 1026` | Align macOS/Xcode/Simulator versions; toggle Apple Intelligence | — |
+| `LOCAL_LLM_UNSUPPORTED_PLATFORM` | Unsupported device / iOS &lt; 26 for text | Device lacks Gemini Nano |
+| Image Playground not supported | Simulator or device without Playground | Expected — use iOS |
+| `LOCAL_LLM_FEATURE_NOT_SUPPORTED_ON_ANDROID` | — | e.g. `generateImage` on Android |
+
+---
+
+## Plugin layout
 
 ```
 cordova-local-llm/
   plugin.xml
-  package.json
-  www/LocalLLM.js          # JS-мост (cordova.exec)
-  src/ios/
-    LocalLLM.swift         # Foundation Models / Image Playground
-    LocalLLMPlugin.swift     # CDVPlugin
-    Bridging-Header.h
+  www/LocalLLM.js
+  src/ios/          # Foundation Models, CDVPlugin
+  src/android/      # ML Kit Gemini Nano, CordovaPlugin (Kotlin)
+    local-llm.gradle
 ```
 
-## Отличия от Capacitor-версии
+## Differences from Capacitor
 
-- Регистрация через `plugin.xml` и `CDVPlugin`, не `CAPPlugin`.
-- Слушатели: `addAvailabilityListener` / `listenerId` вместо встроенного Capacitor `addListener`.
-- Нет npm-пакета `@capacitor/core`; подключение через Cordova `clobbers` → `window.LocalLLM`.
-- Только **iOS** в Cordova-сборке.
+- Uses `CDVPlugin` / `CordovaPlugin` instead of `CAPPlugin`
+- Listeners use `addAvailabilityListener` + `listenerId` under the hood
+- Exposes `window.LocalLLM` via `clobbers` (no `@capacitor/core`)
 
-## Лицензия
+## License
 
-MIT (как у исходного проекта).
+MIT

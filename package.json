@@ -1,19 +1,22 @@
 {
   "name": "cordova-local-llm",
   "version": "1.0.0",
-  "description": "Cordova plugin for on-device LLM on iOS (Apple Intelligence)",
+  "description": "Cordova plugin for on-device LLM on iOS (Apple Intelligence) and Android (Gemini Nano)",
   "cordova": {
     "id": "cordova-local-llm",
     "platforms": [
-      "ios"
+      "ios",
+      "android"
     ]
   },
   "keywords": [
     "cordova",
     "ecosystem:cordova",
     "cordova-ios",
+    "cordova-android",
     "llm",
-    "apple-intelligence"
+    "apple-intelligence",
+    "gemini-nano"
   ],
   "license": "MIT",
   "repository": {
@@ -22,6 +25,7 @@
   },
   "engines": {
     "cordova": ">=12.0.0",
-    "cordova-ios": ">=7.0.0"
+    "cordova-ios": ">=7.0.0",
+    "cordova-android": ">=13.0.0"
   }
 }
