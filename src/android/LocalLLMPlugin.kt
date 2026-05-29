@@ -126,7 +126,12 @@ class LocalLLMPlugin : CordovaPlugin() {
                 } else {
                     forceAvailabilityListenerUpdate = true
                 }
-                pushAvailabilityToListeners()
+                mainScope.launch {
+                    val status = runCatching { implementation.availability() }
+                        .getOrElse { LLMAvailability.Unavailable }
+
+                    pushAvailabilityToListeners(status)
+                }
                 return true
             }
 
@@ -165,7 +170,9 @@ class LocalLLMPlugin : CordovaPlugin() {
                     if (current != lastAvailability || forceAvailabilityListenerUpdate) {
                         lastAvailability = current
                         forceAvailabilityListenerUpdate = false
-                        cordova.activity?.runOnUiThread { pushAvailabilityToListeners(current) }
+                        cordova.activity?.runOnUiThread {
+                            pushAvailabilityToListeners(current)
+                        }
                     }
                     delay(2000)
                 }
@@ -177,13 +184,9 @@ class LocalLLMPlugin : CordovaPlugin() {
         availabilityPollingJob = null
     }
 
-    private suspend fun pushAvailabilityToListeners(status: LLMAvailability? = null) {
-        val resolved =
-            status
-                ?: runCatching { implementation.availability() }
-                    .getOrElse { LLMAvailability.Unavailable }
+    private fun pushAvailabilityToListeners(status: LLMAvailability) {
+        val payload = JSONObject().put("status", status.value)
 
-        val payload = JSONObject().put("status", resolved.value)
         for ((_, callback) in listenerCallbacks.toList()) {
             val result = PluginResult(PluginResult.Status.OK, payload)
             result.keepCallback = true
