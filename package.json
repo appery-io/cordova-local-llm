@@ -1,0 +1,27 @@
+{
+  "name": "cordova-local-llm",
+  "version": "1.0.0",
+  "description": "Cordova plugin for on-device LLM on iOS (Apple Intelligence)",
+  "cordova": {
+    "id": "cordova-local-llm",
+    "platforms": [
+      "ios"
+    ]
+  },
+  "keywords": [
+    "cordova",
+    "ecosystem:cordova",
+    "cordova-ios",
+    "llm",
+    "apple-intelligence"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ionic-team/capacitor-local-llm.git"
+  },
+  "engines": {
+    "cordova": ">=12.0.0",
+    "cordova-ios": ">=7.0.0"
+  }
+}

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="cordova-local-llm"
+        version="1.0.0">
+    <name>Local LLM</name>
+    <description>On-device LLM (Apple Intelligence / Foundation Models) for Cordova iOS</description>
+    <license>MIT</license>
+    <keywords>cordova,llm,ai,apple-intelligence,local-llm</keywords>
+
+    <js-module src="www/LocalLLM.js" name="LocalLLM">
+        <clobbers target="LocalLLM" />
+    </js-module>
+
+    <preference name="UseSwiftLanguageVersion" default="5" />
+    <preference name="deployment-target" default="18.4" />
+
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="LocalLLM">
+                <param name="ios-package" value="LocalLLMPlugin" />
+            </feature>
+        </config-file>
+
+        <header-file src="src/ios/Bridging-Header.h" type="BridgingHeader" />
+        <source-file src="src/ios/LocalLLM.swift" />
+        <source-file src="src/ios/LocalLLMPlugin.swift" />
+
+        <framework src="FoundationModels.framework" weak="true" />
+        <framework src="ImagePlayground.framework" weak="true" />
+    </platform>
+
+</plugin>
