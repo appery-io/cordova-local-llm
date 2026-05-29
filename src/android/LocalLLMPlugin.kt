@@ -177,7 +177,7 @@ class LocalLLMPlugin : CordovaPlugin() {
         availabilityPollingJob = null
     }
 
-    private fun pushAvailabilityToListeners(status: LLMAvailability? = null) {
+    private suspend fun pushAvailabilityToListeners(status: LLMAvailability? = null) {
         val resolved =
             status
                 ?: runCatching { implementation.availability() }

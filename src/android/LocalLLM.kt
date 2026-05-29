@@ -23,6 +23,7 @@ class LocalLLM {
                 FeatureStatus.DOWNLOADABLE -> LLMAvailability.Downloadable
                 FeatureStatus.DOWNLOADING -> LLMAvailability.NotReady
                 FeatureStatus.AVAILABLE -> LLMAvailability.Available
+                else -> LLMAvailability.Unavailable
             }
         } catch (ex: com.google.mlkit.genai.common.GenAiException) {
             if (ex.errorCode == 8) {
